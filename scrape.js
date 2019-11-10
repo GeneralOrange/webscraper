@@ -1,37 +1,38 @@
 const request = require('request');
 const cheerio = require('cheerio');
+const getUrls = require('get-urls');
+
 const fs = require('fs');
 const writeStream = fs.createWriteStream('games.json');
 
+const puppeteer = require('puppeteer');
 
-request('https://www.allkeyshop.com/blog/', (error, response, html) => {
-    if(!error && response.statusCode == 200) {
-        const $ = cheerio.load(html);
+(async () => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.goto('https://www.allkeyshop.com/blog');
+  await page.screenshot({path: 'homepage.png'});
 
-        let games = {
-            games: [
-        ]};
+  const data = await page.evaluate( ()=> {
+    const titles = document.querySelectorAll('.topclick-list-element-game-title');
 
-        $('#Top25 .topclick-list-element').each((i, el) => {
-            
-            const item = $(el).find('.topclick-list-element-game .topclick-list-element-game-title').text();
-            const merchant = $(el).find('.topclick-list-element-game .topclick-list-element-game-merchant').text();
-            const price = $(el).find('.topclick-list-element-price').text();
+    const worked_titles = Array.from(titles).map(v => v.innerText);
 
-            const game = {
-                title: item,
-                merchant: merchant,
-                price: price
-            }
+    return worked_titles;
+  })
+  await browser.close();
 
-            games.games.push(game);
-            
-            
-        });
+  const games = {
+    games: [
 
-        // Write row to csv
-        writeStream.write(JSON.stringify(games));
+    ]
+  }
 
-        console.log('Scraping done...');
-    }
-});
+  games.games.push(data);
+
+  writeStream.write(JSON.stringify(games));
+
+  console.log('Scraping done...');
+
+  return data;
+})();
