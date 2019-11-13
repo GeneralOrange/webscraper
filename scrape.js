@@ -15,7 +15,7 @@ const puppeteer = require('puppeteer');
       return Array.from(document.querySelectorAll('.search-results-row-link')).map((data, key) => ({
         id: key,
         title: data.querySelector('.search-results-row-game-title').innerText,
-        link: data.src,
+        link: data.href,
         info: {
           price: data.querySelector('.search-results-row-price').innerText.trim(),
           year: data.querySelector('.search-results-row-game-infos').innerText.split('-')[0],
