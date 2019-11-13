@@ -19,6 +19,9 @@
   "homepage": "https://github.com/GeneralOrange/webscraper#readme",
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
+    "get-urls": "^9.2.0",
+    "node-fetch": "^2.6.0",
+    "puppeteer": "^2.0.0",
     "request": "^2.88.0"
   }
 }

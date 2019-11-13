@@ -1,37 +1,58 @@
-const request = require('request');
-const cheerio = require('cheerio');
 const fs = require('fs');
 const writeStream = fs.createWriteStream('games.json');
 
+const puppeteer = require('puppeteer');
 
-request('https://www.allkeyshop.com/blog/', (error, response, html) => {
-    if(!error && response.statusCode == 200) {
-        const $ = cheerio.load(html);
+(async () => {
+  const extractGames = async url => {
+    const page = await browser.newPage();
 
-        let games = {
-            games: [
-        ]};
+    await page.goto(url);
+    console.log(`Scraping: ${url}`);
 
-        $('#Top25 .topclick-list-element').each((i, el) => {
-            
-            const item = $(el).find('.topclick-list-element-game .topclick-list-element-game-title').text();
-            const merchant = $(el).find('.topclick-list-element-game .topclick-list-element-game-merchant').text();
-            const price = $(el).find('.topclick-list-element-price').text();
+    //Scrape data we need
+    const gamesOnPage = await page.evaluate( ()=> {
+      return Array.from(document.querySelectorAll('.search-results-row-link')).map((data, key) => ({
+        id: key,
+        title: data.querySelector('.search-results-row-game-title').innerText,
+        link: data.src,
+        info: {
+          price: data.querySelector('.search-results-row-price').innerText.trim(),
+          year: data.querySelector('.search-results-row-game-infos').innerText.split('-')[0],
+          category: data.querySelector('.search-results-row-game-infos').innerText.split('-')[1],
+          grade: data.querySelector('.metacritic-button').innerText.trim()
+        }
+      }));
+    });
 
-            const game = {
-                title: item,
-                merchant: merchant,
-                price: price
-            }
+    await page.close();
 
-            games.games.push(game);
-            
-            
-        });
+    if(gamesOnPage.length < 1){
+      console.log(`Terminated scraping on page: ${url}`);
+      return gamesOnPage;
+    } else {
+      const nextNumber = parseInt(url.match(/page-(\d+)$/)[1], 10) + 1;
+      const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
-        // Write row to csv
-        writeStream.write(JSON.stringify(games));
-
-        console.log('Scraping done...');
+      //Add limitation for testing
+      if(nextNumber === 5){
+        return gamesOnPage;
+      } else {
+        return gamesOnPage.concat(await extractGames(nextUrl));
+      }
     }
-});
+  };
+
+  const browser = await puppeteer.launch();
+  
+  const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-1`;
+
+  const games = await extractGames(firstUrl);
+
+  await browser.close();
+
+  console.log('Scraping done...');
+
+  writeStream.write(JSON.stringify(games));
+})();
+
