@@ -1,38 +1,58 @@
-const request = require('request');
-const cheerio = require('cheerio');
-const getUrls = require('get-urls');
-
 const fs = require('fs');
 const writeStream = fs.createWriteStream('games.json');
 
 const puppeteer = require('puppeteer');
 
 (async () => {
+  const extractGames = async url => {
+    const page = await browser.newPage();
+
+    await page.goto(url);
+    console.log(`Scraping: ${url}`);
+
+    //Scrape data we need
+    const gamesOnPage = await page.evaluate( ()=> {
+      return Array.from(document.querySelectorAll('.search-results-row-link')).map((data, key) => ({
+        id: key,
+        title: data.querySelector('.search-results-row-game-title').innerText,
+        link: data.src,
+        info: {
+          price: data.querySelector('.search-results-row-price').innerText.trim(),
+          year: data.querySelector('.search-results-row-game-infos').innerText.split('-')[0],
+          category: data.querySelector('.search-results-row-game-infos').innerText.split('-')[1],
+          grade: data.querySelector('.metacritic-button').innerText.trim()
+        }
+      }));
+    });
+
+    await page.close();
+
+    if(gamesOnPage.length < 1){
+      console.log(`Terminated scraping on page: ${url}`);
+      return gamesOnPage;
+    } else {
+      const nextNumber = parseInt(url.match(/page-(\d+)$/)[1], 10) + 1;
+      const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
+
+      //Add limitation for testing
+      if(nextNumber === 5){
+        return gamesOnPage;
+      } else {
+        return gamesOnPage.concat(await extractGames(nextUrl));
+      }
+    }
+  };
+
   const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto('https://www.allkeyshop.com/blog');
-  await page.screenshot({path: 'homepage.png'});
+  
+  const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-1`;
 
-  const data = await page.evaluate( ()=> {
-    const titles = document.querySelectorAll('.topclick-list-element-game-title');
+  const games = await extractGames(firstUrl);
 
-    const worked_titles = Array.from(titles).map(v => v.innerText);
-
-    return worked_titles;
-  })
   await browser.close();
-
-  const games = {
-    games: [
-
-    ]
-  }
-
-  games.games.push(data);
-
-  writeStream.write(JSON.stringify(games));
 
   console.log('Scraping done...');
 
-  return data;
+  writeStream.write(JSON.stringify(games));
 })();
+
