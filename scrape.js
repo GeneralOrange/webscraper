@@ -73,7 +73,7 @@ const puppeteer = require('puppeteer');
       return gamesOnPage;
     } else {
       const nextNumber = parseInt(url.match(/page-(\d+)$/)[1], 10) + 1;
-      const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
+      const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/min-year-2000/min-rating-50/min-votes-1/page-${nextNumber}`;
 
       //Add limitation for testing
       if(nextNumber === 2){
@@ -86,7 +86,7 @@ const puppeteer = require('puppeteer');
 
   const browser = await puppeteer.launch();
   
-  const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-1`;
+  const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/min-year-2000/min-rating-50/min-votes-1/page-1`;
 
   const games = await extractGames(firstUrl);
 
