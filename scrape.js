@@ -1,7 +1,17 @@
 const fs = require('fs');
-const writeStream = fs.createWriteStream('games.json');
-
 const puppeteer = require('puppeteer');
+
+function getFormattedTime() {
+  var today = new Date();
+  var y = today.getFullYear();
+  // JavaScript months are 0-based.
+  var m = today.getMonth() + 1;
+  var d = today.getDate();
+  var h = today.getHours();
+  var mi = today.getMinutes();
+  var s = today.getSeconds();
+  return y + "-" + m + "-" + d + "-" + h + "-" + mi + "-" + s;
+}
 
 (async () => {
   const extractGames = async url => {
@@ -48,23 +58,14 @@ const puppeteer = require('puppeteer');
           return offers;
         });
 
-        game.config = await page.$$eval('#config ul', (config, key) => {
-          var config;
-          if(key < 1){
-            config += config.map(data => ({
-              min_sys_req: Array.from(data.querySelectorAll('li')).map(li => ({
-                spec: li.innerText
-              }))
-            })); 
-          } else {
-            config += config.map(data => ({
-              rec_sys_req: Array.from(data.querySelectorAll('li')).map(li => ({
-                spec: li.innerText
-              }))
-            }));
-          }
-        
-          return config;
+        game.config = await page.$$eval('#config ul', config => {
+          var configs = config.map((data, key) => ({
+            specs: Array.from(data.querySelectorAll('li')).map(i => ({
+              spec: i.innerText
+            }))
+          }))
+
+          return configs;
         });
     };
 
@@ -73,7 +74,7 @@ const puppeteer = require('puppeteer');
       return gamesOnPage;
     } else {
       const nextNumber = parseInt(url.match(/page-(\d+)$/)[1], 10) + 1;
-      const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/min-year-2000/min-rating-50/min-votes-1/page-${nextNumber}`;
+      const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
       //Add limitation for testing
       if(nextNumber === 2){
@@ -86,7 +87,7 @@ const puppeteer = require('puppeteer');
 
   const browser = await puppeteer.launch();
   
-  const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/min-year-2000/min-rating-50/min-votes-1/page-1`;
+  const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-1`;
 
   const games = await extractGames(firstUrl);
 
@@ -94,6 +95,12 @@ const puppeteer = require('puppeteer');
 
   console.log('Scraping done...');
 
+  console.log('Creating file to store data...');
+  const date = getFormattedTime();
+  const writeStream = fs.createWriteStream('games_'+date+'.json');
+
   writeStream.write(JSON.stringify(games));
+
+  console.log('Data stored!');
 })();
 
