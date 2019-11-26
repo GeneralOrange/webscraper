@@ -97,7 +97,7 @@ function getFormattedTime() {
 
   console.log('Creating file to store data...');
   const date = getFormattedTime();
-  const writeStream = fs.createWriteStream('games_'+date+'.json');
+  const writeStream = fs.createWriteStream('./games/games_'+date+'.json');
 
   writeStream.write(JSON.stringify(games));
 
