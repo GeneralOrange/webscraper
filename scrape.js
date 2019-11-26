@@ -85,7 +85,7 @@ function getFormattedTime() {
     }
   };
 
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
   
   const firstUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-1`;
 
