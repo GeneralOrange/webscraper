@@ -1,6 +1,5 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
-const translate = require('@vitalets/google-translate-api');
 
 function getFormattedTime() {
   var today = new Date();
