@@ -1,5 +1,6 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
+const translate = require('@vitalets/google-translate-api');
 
 function getFormattedTime() {
   var today = new Date();
@@ -25,19 +26,22 @@ function getFormattedTime() {
     const gamesOnPage = await page.$$eval('.search-results-row-link', el => {
       var games = el.map((data, key) => ({
         id: key,
-        title: data.querySelector('.search-results-row-game-title').innerText,
         link: data.href,
         info: {
-          lowest_price: data.querySelector('.search-results-row-price').innerText.trim(),
+          title: data.querySelector('.search-results-row-game-title').innerText,
           year: data.querySelector('.search-results-row-game-infos').innerText.split('-')[0],
           category: data.querySelector('.search-results-row-game-infos').innerText.split('-')[1],
           grade: data.querySelector('.metacritic-button').innerText.trim()
+        },
+        offers: {
+          lowest_price: data.querySelector('.search-results-row-price').innerText.trim()
         }
       }));
 
       return games;
     });
 
+    //Loop through fetched URLS
     for (let game of gamesOnPage) {
         try {
           await page.goto(game.link);
@@ -46,9 +50,31 @@ function getFormattedTime() {
           console.log(error);
         }
         
-        game.img = await page.$eval('.content-box img.mx-auto.d-block.img-fluid', image => image.src);
+        //Add more to info
+        game.info.thumbnail = await page.$eval('.content-box img.mx-auto.d-block.img-fluid', image => image.src);
 
-        game.offers = await page.$$eval('.offers-table .offers-table-row', offer => {
+        game.info.media = await page.$$eval('.game-images-slide .slick-track .gallery-slider', el => {
+          var media = el.map(data => ({
+            item: data.querySelector('a').href
+          }));
+
+          return media;
+        });
+
+        game.info.description = await page.$eval('#info', el => {
+          var desc = Array.from(el.querySelectorAll('p'));
+
+          //Remove first value in array, because we dont want it
+          desc.splice(0,1);
+
+          var description = desc.map(data => data.innerText).join(' ');
+
+          return {
+            english: description
+          };
+        });
+
+        var new_offers = await page.$$eval('.offers-table .offers-table-row', offer => {
           var offers = offer.map(data => ({
             seller: data.querySelector('.offers-merchant-name').innerText,
             platform: data.querySelector('.offers-edition-region').innerText,
@@ -58,8 +84,10 @@ function getFormattedTime() {
           return offers;
         });
 
+        game.offers = Object.assign({}, game.offers, new_offers); 
+
         game.config = await page.$$eval('#config ul', config => {
-          var configs = config.map((data, key) => ({
+          var configs = config.map((data) => ({
             specs: Array.from(data.querySelectorAll('li')).map(i => ({
               spec: i.innerText
             }))
@@ -77,7 +105,8 @@ function getFormattedTime() {
       const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
       //Add limitation for testing
-      if(nextNumber === 6){
+      if(nextNumber === 25){
+        console.log(`Terminated scraping on page: ${url}`);
         return gamesOnPage;
       } else {
         return gamesOnPage.concat(await extractGames(nextUrl));
