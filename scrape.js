@@ -18,7 +18,9 @@ function getFormattedTime() {
     const page = await browser.newPage();
 
     //Go to pagination page
-    await page.goto(url);
+    await page.goto(url, {
+      timeout: 0
+    });
     console.log(`Scraping: ${url}`);
 
     //Scrape data we need
@@ -43,7 +45,9 @@ function getFormattedTime() {
     //Loop through fetched URLS
     for (let game of gamesOnPage) {
         try {
-          await page.goto(game.link);
+          await page.goto(game.link, {
+            timeout: 0
+          });
           console.log(`Scraping: ${game.link}`);
         } catch(error){
           console.log(error);
@@ -70,6 +74,16 @@ function getFormattedTime() {
 
           return {
             english: description
+          };
+        });
+
+        game.info.about = await page.$eval('#about', el => {
+          var desc = Array.from(el.querySelectorAll('p'));
+
+          var about = desc.map(data => data.innerText).join(' ');
+
+          return {
+            english: about
           };
         });
 
@@ -104,7 +118,7 @@ function getFormattedTime() {
       const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
       //Add limitation for testing
-      if(nextNumber === 6){
+      if(nextNumber === 25){
         console.log(`Terminated scraping on page: ${url}`);
         return gamesOnPage;
       } else {
