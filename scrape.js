@@ -40,7 +40,7 @@ function getFormattedTime() {
       }));
 
       return games;
-    });
+    }).catch(err => console.log(`- Error: Oops something went wrong: ${err}`));
 
     //Loop through fetched URLS
     for (let game of gamesOnPage) {
@@ -49,12 +49,24 @@ function getFormattedTime() {
             timeout: 0
           });
           console.log(`Scraping: ${game.link}`);
-        } catch(error){
-          console.log(error);
+        } catch(err){
+          console.log(err);
         }
         
         //Add more to info
-        game.info.thumbnail = await page.$eval('.content-box img.mx-auto.d-block.img-fluid', image => image.src);
+        var game_info = await page.$eval('#info ul', el => {
+          var extra_info = Array.from(el.querySelectorAll('li')).map(data => data.innerText.toLowerCase());
+
+          if(extra_info[0].indexOf('news')){
+            extra_info.splice(0, 1);
+          }
+          
+          return extra_info;
+        }).catch(err => console.log(`No extra gameinfo on ${game.link}`));
+
+        game.info = Object.assign({}, game.info, game_info);
+
+        game.info.thumbnail = await page.$eval('.content-box img.mx-auto.d-block.img-fluid', image => image.src).catch(err => console.log(`- Error: Thumbnail not found on ${game.link}`));
 
         game.info.media = await page.$$eval('.game-images-slide .slick-track .gallery-slider', el => {
           var media = el.map(data => ({
@@ -62,7 +74,7 @@ function getFormattedTime() {
           }));
 
           return media;
-        });
+        }).catch(err => console.log(`- Error: Media not found on ${game.link}`));
 
         game.info.description = await page.$eval('#info', el => {
           var desc = Array.from(el.querySelectorAll('p'));
@@ -75,7 +87,7 @@ function getFormattedTime() {
           return {
             english: description
           };
-        });
+        }).catch(err => console.log(`- Error: Description not found on ${game.link}`));
 
         game.info.about = await page.$eval('#about', el => {
           var desc = Array.from(el.querySelectorAll('p'));
@@ -85,7 +97,7 @@ function getFormattedTime() {
           return {
             english: about
           };
-        });
+        }).catch(err => console.log(`- Error: About not found on ${game.link}`));
 
         var new_offers = await page.$$eval('.offers-table .offers-table-row', offer => {
           var offers = offer.map(data => ({
@@ -95,7 +107,7 @@ function getFormattedTime() {
           }));
 
           return offers;
-        });
+        }).catch(err => console.log(`- Error: Offers not found on ${game.link}`));
 
         game.offers = Object.assign({}, game.offers, new_offers); 
 
@@ -107,7 +119,7 @@ function getFormattedTime() {
           }))
 
           return configs;
-        });
+        }).catch(err => console.log(`- Error: Config not found on ${game.link}`));
     };
 
     if(gamesOnPage.length < 1){
