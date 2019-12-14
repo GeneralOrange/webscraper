@@ -18,9 +18,14 @@ function getFormattedTime() {
     const page = await browser.newPage();
 
     //Go to pagination page
-    await page.goto(url, {
-      timeout: 0
-    });
+    try {
+      await page.goto(url, {
+        timeout: 0
+      });
+    } catch(err) {
+      console.log(err);
+    }
+   
     console.log(`Scraping: ${url}`);
 
     //Scrape data we need
@@ -130,7 +135,7 @@ function getFormattedTime() {
       const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
       //Add limitation for testing
-      if(nextNumber === 25){
+      if(nextNumber === 15){
         console.log(`Terminated scraping on page: ${url}`);
         return gamesOnPage;
       } else {
