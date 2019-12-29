@@ -135,7 +135,7 @@ function getFormattedTime() {
       const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
       //Add limitation for testing
-      if(nextNumber === 15){
+      if(nextNumber === 5){
         console.log(`Terminated scraping on page: ${url}`);
         return gamesOnPage;
       } else {
