@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/GeneralOrange/webscraper#readme",
   "dependencies": {
-    "puppeteer": "^2.0.0",
-    "minimist": ">=1.2.6"
+    "puppeteer": "^14.3.0"
   }
 }
