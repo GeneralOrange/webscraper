@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/GeneralOrange/webscraper#readme",
   "dependencies": {
+    "cross-env": "^7.0.3",
     "puppeteer": "^14.3.0"
   }
 }

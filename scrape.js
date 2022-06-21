@@ -1,4 +1,5 @@
 const fs = require('fs');
+const env = require('process');
 const puppeteer = require('puppeteer');
 
 function getFormattedTime() {
@@ -73,9 +74,9 @@ function getFormattedTime() {
 
         game.info.thumbnail = await page.$eval('.content-box img.mx-auto.d-block.img-fluid', image => image.src).catch(err => console.log(`- Error: Thumbnail not found on ${game.link}`));
 
-        game.info.media = await page.$$eval('.game-images-slide .slick-track .gallery-slider', el => {
+        game.info.media = await page.$$eval('.gamepage__slide.gallery-slider', el => {
           var media = el.map(data => ({
-            item: data.querySelector('a').href
+            item: data.querySelector('img').src
           }));
 
           return media;
@@ -88,6 +89,7 @@ function getFormattedTime() {
           desc.splice(0,1);
 
           var description = desc.map(data => data.innerText).join(' ');
+          description.replace('Allkeyshop.com', 'Gamekoopjes.nl');
 
           return {
             english: description
@@ -135,7 +137,8 @@ function getFormattedTime() {
       const nextUrl = `https://www.allkeyshop.com/blog/catalogue/category-pc-games-all/page-${nextNumber}`;
 
       //Add limitation for testing
-      if(nextNumber === 5){
+      //console.log(process.env.TOTAL_PAGES_SCRAPED);
+      if(nextNumber === 10){
         console.log(`Terminated scraping on page: ${url}`);
         return gamesOnPage;
       } else {
